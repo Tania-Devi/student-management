@@ -1,156 +1,183 @@
-# =============================
-# Student Management System (Modern GUI)
-# =============================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Task Manager</title>
 
-import tkinter as tk
-from tkinter import messagebox
-import json
-import os
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
 
-FILE = "tasks.json"
+  .container {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    width: 350px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  }
 
-# Load data
-if os.path.exists(FILE):
-    with open(FILE, "r") as f:
-        tasks = json.load(f)
-else:
-    tasks = []
+  h2 {
+    text-align: center;
+    margin-bottom: 15px;
+  }
 
-# Save data
+  .input-box {
+    display: flex;
+    gap: 5px;
+  }
 
-def save_tasks():
-    with open(FILE, "w") as f:
-        json.dump(tasks, f, indent=4)
+  input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
 
-# Add task
+  button {
+    padding: 8px 12px;
+    border: none;
+    background: #667eea;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+  }
 
-def add_task():
-    title = title_entry.get()
-    deadline = deadline_entry.get()
+  button:hover {
+    background: #5a67d8;
+  }
 
-    if title == "":
-        messagebox.showwarning("Warning", "Task cannot be empty")
-        return
+  ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+  }
 
-    task = {
-        "title": title,
-        "deadline": deadline,
-        "status": "Pending"
+  li {
+    background: #f4f4f4;
+    padding: 10px;
+    margin-top: 8px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .delete {
+    background: red;
+    color: white;
+    padding: 5px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .completed {
+    text-decoration: line-through;
+    color: gray;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>📘 Task Manager</h2>
+
+  <div class="input-box">
+    <input type="text" id="taskInput" placeholder="Enter task">
+    <button id="addBtn">Add</button>
+  </div>
+
+  <ul id="taskList"></ul>
+</div>
+
+<script>
+  let tasks = [];
+
+  // Load tasks
+  function loadTasks() {
+    const data = localStorage.getItem("tasks");
+    if (data) {
+      tasks = JSON.parse(data);
+    }
+  }
+
+  // Save tasks
+  function saveTasks() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }
+
+  // Display tasks
+  function displayTasks() {
+    const list = document.getElementById("taskList");
+    list.innerHTML = "";
+
+    tasks.forEach((task, index) => {
+      const li = document.createElement("li");
+
+      const text = document.createElement("span");
+      text.innerText = task.text;
+
+      if (task.done) text.classList.add("completed");
+
+      text.onclick = () => toggleTask(index);
+
+      const del = document.createElement("span");
+      del.innerText = "X";
+      del.className = "delete";
+      del.onclick = () => deleteTask(index);
+
+      li.appendChild(text);
+      li.appendChild(del);
+
+      list.appendChild(li);
+    });
+  }
+
+  // Add task
+  document.getElementById("addBtn").addEventListener("click", addTask);
+
+  function addTask() {
+    const input = document.getElementById("taskInput");
+    const value = input.value.trim();
+
+    if (value === "") {
+      alert("Enter a task!");
+      return;
     }
 
-    tasks.append(task)
-    save_tasks()
-    update_list()
-    animate_add()
+    tasks.push({ text: value, done: false });
+    input.value = "";
 
-    title_entry.delete(0, tk.END)
-    deadline_entry.delete(0, tk.END)
+    saveTasks();
+    displayTasks();
+  }
 
-# Update list
+  // Delete task
+  function deleteTask(index) {
+    tasks.splice(index, 1);
+    saveTasks();
+    displayTasks();
+  }
 
-def update_list():
-    task_listbox.delete(0, tk.END)
-    for i, task in enumerate(tasks):
-        status_color = "🟢" if task['status'] == "Done" else "🔴"
-        display = f"{status_color} {task['title']} | {task['deadline']}"
-        task_listbox.insert(tk.END, display)
+  // Toggle complete
+  function toggleTask(index) {
+    tasks[index].done = !tasks[index].done;
+    saveTasks();
+    displayTasks();
+  }
 
-# Mark complete
+  // Initialize
+  loadTasks();
+  displayTasks();
+</script>
 
-def mark_complete():
-    try:
-        index = task_listbox.curselection()[0]
-        tasks[index]['status'] = "Done"
-        save_tasks()
-        update_list()
-    except:
-        messagebox.showwarning("Warning", "Select a task")
-
-# Delete task
-
-def delete_task():
-    try:
-        index = task_listbox.curselection()[0]
-        tasks.pop(index)
-        save_tasks()
-        update_list()
-    except:
-        messagebox.showwarning("Warning", "Select a task")
-
-# Animation (simple flash effect)
-
-def animate_add():
-    original = root.cget("bg")
-    root.config(bg="#d1ffd6")
-    root.after(200, lambda: root.config(bg=original))
-
-# GUI Setup
-root = tk.Tk()
-root.title("Student Management System")
-root.geometry("600x550")
-root.config(bg="#1e1e2f")
-
-# Title
-label = tk.Label(root, text="📘 Student Task Manager", font=("Arial", 18, "bold"), fg="white", bg="#1e1e2f")
-label.pack(pady=15)
-
-# Input Frame
-frame = tk.Frame(root, bg="#2c2c3e", bd=2, relief="ridge")
-frame.pack(pady=10, padx=20, fill="x")
-
-# Task
-tk.Label(frame, text="Task", fg="white", bg="#2c2c3e").grid(row=0, column=0, padx=10, pady=5)
-title_entry = tk.Entry(frame, width=30, bg="#3c3c50", fg="white", insertbackground="white")
-title_entry.grid(row=0, column=1, padx=10, pady=5)
-
-# Deadline
-tk.Label(frame, text="Deadline", fg="white", bg="#2c2c3e").grid(row=1, column=0, padx=10, pady=5)
-deadline_entry = tk.Entry(frame, width=30, bg="#3c3c50", fg="white", insertbackground="white")
-deadline_entry.grid(row=1, column=1, padx=10, pady=5)
-
-# Buttons
-btn_frame = tk.Frame(root, bg="#1e1e2f")
-btn_frame.pack(pady=15)
-
-btn_style = {"font": ("Arial", 10, "bold"), "width": 12, "bd": 0}
-
-tk.Button(btn_frame, text="➕ Add", bg="#4CAF50", fg="white", command=add_task, **btn_style).grid(row=0, column=0, padx=10)
-tk.Button(btn_frame, text="✔ Done", bg="#2196F3", fg="white", command=mark_complete, **btn_style).grid(row=0, column=1, padx=10)
-tk.Button(btn_frame, text="❌ Delete", bg="#f44336", fg="white", command=delete_task, **btn_style).grid(row=0, column=2, padx=10)
-
-# Listbox Frame
-list_frame = tk.Frame(root, bg="#2c2c3e")
-list_frame.pack(pady=10, padx=20, fill="both", expand=True)
-
-# Scrollbar
-scrollbar = tk.Scrollbar(list_frame)
-scrollbar.pack(side="right", fill="y")
-
-# Listbox
-task_listbox = tk.Listbox(
-    list_frame,
-    width=60,
-    height=15,
-    bg="#3c3c50",
-    fg="white",
-    selectbackground="#6a5acd",
-    activestyle="none",
-    yscrollcommand=scrollbar.set
-)
-task_listbox.pack(fill="both", expand=True)
-
-scrollbar.config(command=task_listbox.yview)
-
-update_list()
-
-root.mainloop()
-
-# =============================
-# UI Improvements Added:
-# =============================
-# - Dark theme
-# - Colored buttons
-# - Emoji indicators
-# - Smooth flash animation
-# - Styled input fields
-# - Scrollable task list
+</body>
+</html>
